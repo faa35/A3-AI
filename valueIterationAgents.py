@@ -10,10 +10,25 @@
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
 # Student side autograding was added by Brad Miller, Nick Hay, and
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
+import queue
+
+# valueIterationAgents.py
+# -----------------------
+# Licensing Information:  You are free to use or extend these projects for
+# educational purposes provided that (1) you do not distribute or publish
+# solutions, (2) you retain this notice, and (3) you provide clear
+# attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
+# 
+# Attribution Information: The Pacman AI projects were developed at UC Berkeley.
+# The core projects and autograders were primarily created by John DeNero
+# (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
+# Student side autograding was added by Brad Miller, Nick Hay, and
+# Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
 import mdp, util
 from queue import PriorityQueue
+
 from learningAgents import ValueEstimationAgent
 import collections
 
@@ -77,7 +92,7 @@ class ValueIterationAgent(ValueEstimationAgent):
           Compute the Q-value of action in state from the
           value function stored in self.values.
         """
-        # Computes the Q-value by summing over possible transitions, using the reward and future value for each transition.
+        #computes the Q-value by summing over possible transitions, using the reward and future value for each transition.
         q_value = 0
         for nextState, prob in self.mdp.getTransitionStatesAndProbs(state, action):
             reward = self.mdp.getReward(state, action, nextState)
@@ -94,7 +109,7 @@ class ValueIterationAgent(ValueEstimationAgent):
           there are no legal actions, which is the case at the
           terminal state, you should return None.
         """
-        # Computes the optimal action by selecting the one with the highest Q-value in the given state.
+        #computes the optimal action by selecting the one with the highest Q-value in the given state.
         if self.mdp.isTerminal(state):
             return None
         action_values = util.Counter()
@@ -132,8 +147,8 @@ class PrioritizedSweepingValueIterationAgent(ValueIterationAgent):
         ValueIterationAgent.__init__(self, mdp, discount, iterations)
 
     def setupAllPredecessors(self):
-        # Compute predecessors of all states and save it in a util.Counter() and return it
-        # This function builds a dictionary of sets where each key (state) maps to all its predecessors.
+        #compute predecessors of all states and save it in a util.Counter() and return it
+        # this function builds a dictionary of sets where each key (state) maps to all its predecessors.
         predecessors = {}
         for state in self.mdp.getStates():
             predecessors[state] = set()
@@ -146,10 +161,10 @@ class PrioritizedSweepingValueIterationAgent(ValueIterationAgent):
         return predecessors
 
     def setupPriorityQueue(self):
-        # Setup priority queue for all states based on their highest diff in greedy update
+        # setup priority queue for all states based on their highest diff in greedy update
         # This initializes a priority queue for prioritized sweeping.
-        # It calculates the difference (diff) between the current value and the max Q-value for each state.
-        # States with larger differences have higher priority in the queue.
+        # it calculates the difference (diff) between the current value and the max Q-value for each state.
+        # states with larger differences have higher priority in the queue.
         priority_queue = util.PriorityQueue()
         for state in self.mdp.getStates():
             if not self.mdp.isTerminal(state):
@@ -160,15 +175,16 @@ class PrioritizedSweepingValueIterationAgent(ValueIterationAgent):
         return priority_queue
 
     def runValueIteration(self):
-        # Compute predecessors of all states
-        # Here, we initialize predecessors and priority queue for prioritized sweeping.
-        # States are updated in the order of priority, calculated by their value difference.
+
+        #compute predecessors of all states
+        # here, we initialize predecessors and priority queue for prioritized sweeping.
+        # states are updated in the order of priority, calculated by their value difference.
         all_preds = self.setupAllPredecessors()
 
-        # Setup priority queue
+        # setup priority queue
         pq = self.setupPriorityQueue()
 
-        # Run prioritized sweeping value iteration
+        # run priority sweeping value iteration:
         # Updates the value of states based on prioritized order, using the threshold theta.
         for _ in range(self.iterations):
             if pq.isEmpty():

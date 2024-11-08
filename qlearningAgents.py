@@ -54,6 +54,7 @@ class QLearningAgent(ReinforcementAgent):
         # If the pair is not in self.qvalues, it returns the default value of 0.0
         return self.qvalues[(state, action)]
 
+
     def computeValueFromQValues(self, state):
         """
           Returns max_action Q(state,action)
@@ -138,3 +139,4 @@ class QLearningAgent(ReinforcementAgent):
     def getValue(self, state):
         # Returns the maximum Q-value for a given state.
         return self.computeValueFromQValues(state)
+
