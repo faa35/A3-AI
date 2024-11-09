@@ -72,11 +72,13 @@ class ValueIterationAgent(ValueEstimationAgent):
 
     def runValueIteration(self):
         # Write value iteration code here
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-
-
-
+        # Modified to perform the iterative value update based on a greedy policy.
+        # It iterates through each state and updates its value based on the maximum Q-value over possible actions.
+        for _ in range(self.iterations):
+            update_values_dict = util.Counter()
+            for state in self.mdp.getStates():
+                update_values_dict[state] = self.getGreedyUpdate(state)
+            self.values = update_values_dict
 
     def getValue(self, state):
         """
@@ -90,8 +92,16 @@ class ValueIterationAgent(ValueEstimationAgent):
           Compute the Q-value of action in state from the
           value function stored in self.values.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        #computes the Q-value by summing over possible transitions, using the reward and future value for each transition.
+        q_value = 0
+
+        possible_next_states = self.mdp.getTransitionStatesAndProbs(state, action)
+
+        for nextState, prob in possible_next_states:
+            reward = self.mdp.getReward(state, action, nextState)
+            q_value += prob * (reward + self.discount * self.values[nextState])
+
+        return q_value
 
 
     def computeActionFromValues(self, state):
@@ -103,9 +113,13 @@ class ValueIterationAgent(ValueEstimationAgent):
           there are no legal actions, which is the case at the
           terminal state, you should return None.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-
+        #computes the optimal action by selecting the one with the highest Q-value in the given state.
+        if self.mdp.isTerminal(state):
+            return None
+        action_values = util.Counter()
+        for action in self.mdp.getPossibleActions(state):
+            action_values[action] = self.computeQValueFromValues(state, action)
+        return action_values.argMax()
 
 
     def getPolicy(self, state):
@@ -138,23 +152,63 @@ class PrioritizedSweepingValueIterationAgent(ValueIterationAgent):
 
     def setupAllPredecessors(self):
         #compute predecessors of all states and save it in a util.Counter() and return it
-		"*** YOUR CODE HERE ***"
+        # this function builds a dictionary of sets where each key (state) maps to all its predecessors.
+        predecessors = {}
+        for state in self.mdp.getStates():
+            predecessors[state] = set()
+        for state in self.mdp.getStates():
+            if not self.mdp.isTerminal(state):
+                for action in self.mdp.getPossibleActions(state):
+                    for next_state, prob in self.mdp.getTransitionStatesAndProbs(state, action):
+                        if prob > 0:
+                            predecessors[next_state].add(state)
+        return predecessors
 
     def setupPriorityQueue(self):
         # setup priority queue for all states based on their highest diff in greedy update
-		"*** YOUR CODE HERE ***"
+        # This initializes a priority queue for prioritized sweeping.
+        # it calculates the difference (diff) between the current value and the max Q-value for each state.
+        # states with larger differences have higher priority in the queue.
+        priority_queue = util.PriorityQueue()
+        for state in self.mdp.getStates():
+            if not self.mdp.isTerminal(state):
+                max_q_value = max([self.computeQValueFromValues(state, action)
+                                   for action in self.mdp.getPossibleActions(state)])
+                diff = abs(self.values[state] - max_q_value)
+                priority_queue.update(state, -diff)
+        return priority_queue
 
     def runValueIteration(self):
         
         #compute predecessors of all states
+        # we are gonna initialize predecessors and priority queue for prioritized sweeping.
+        # states are updated in the order of priority, calculated by their value difference.
         allpreds = self.setupAllPredecessors()
 
         # setup priority queue
         pq = self.setupPriorityQueue()
 
         # run priority sweeping value iteration:
-        util.raiseNotDefined()
-        "*** YOUR CODE HERE ***"
-
-
-
+        # Updates the value of states based on prioritized order, using the threshold theta.
+        for _ in range(self.iterations):
+            if pq.isEmpty():
+                break
+            state = pq.pop()
+            if not self.mdp.isTerminal(state):
+                possible_actions = self.mdp.getPossibleActions(state)
+                q_values = []
+                for action in possible_actions:
+                    q_value = self.computeQValueFromValues(state, action)
+                    q_values.append(q_value)
+                self.values[state] = max(q_values)
+            for predecessor in allpreds[state]:
+                if not self.mdp.isTerminal(predecessor):
+                    possible_actions = self.mdp.getPossibleActions(predecessor)
+                    q_values = []
+                    for action in possible_actions:
+                        q_value = self.computeQValueFromValues(predecessor, action)
+                        q_values.append(q_value)
+                    max_q_value = max(q_values)
+                    diff = abs(self.values[predecessor] - max_q_value)
+                    if diff > self.theta:
+                        pq.update(predecessor, -diff)
